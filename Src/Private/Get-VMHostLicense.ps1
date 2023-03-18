@@ -27,35 +27,40 @@ PS> Get-VMHostLicense -VMHost ESXi01
         [PSObject]$VMHost,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false)]
         [Switch]$Licenses
-    ) 
+    )
 
-    if ($VMHost) {
-        $LicenseObject = @()
-        $ServiceInstance = Get-View ServiceInstance -Server $ESXi
-        $LicenseManager = Get-View $ServiceInstance.Content.LicenseManager -Server $ESXi
-        #$LicenseManagerAssign = Get-View $LicenseManager.LicenseAssignmentManager
-    
-        #$VMHostId = $VMHost.Extensiondata.Config.Host.Value
-        #$VMHostAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($VMHostId)    
-        $VMHostLicense = $LicenseManager.Licenses
-        $VMHostLicenseExpiration = ($VMHostLicense.Properties | Where-Object { $_.Key -eq 'expirationDate' } | Select-Object Value).Value
-        if ($VMHostLicense.LicenseKey -and $Options.ShowLicenseKeys) {
-            $VMHostLicenseKey = $VMHostLicense.LicenseKey
-        } else {
-            $VMHostLicenseKey = "*****-*****-*****" + $VMHostLicense.LicenseKey.Substring(17)
-        }
-        $LicenseObject = [PSCustomObject]@{                               
-            Product = $VMHostLicense.Name 
-            LicenseKey = $VMHostLicenseKey
-            Expiration =
-            if ($VMHostLicenseExpiration -eq $null) {
-                "Never" 
-            } elseif ($VMHostLicenseExpiration -gt (Get-Date)) {
-                $VMHostLicenseExpiration.ToShortDateString()
+    Process {
+
+        if ($VMHost) {
+            $LicenseObject = @()
+            $ServiceInstance = Get-View ServiceInstance -Server $ESXi
+            $LicenseManager = Get-View $ServiceInstance.Content.LicenseManager -Server $ESXi
+            #$LicenseManagerAssign = Get-View $LicenseManager.LicenseAssignmentManager
+
+            #$VMHostId = $VMHost.Extensiondata.Config.Host.Value
+            #$VMHostAssignedLicense = $LicenseManagerAssign.QueryAssignedLicenses($VMHostId)
+            $VMHostLicense = $LicenseManager.Licenses
+            $VMHostLicenseExpiration = ($VMHostLicense.Properties | Where-Object { $_.Key -eq 'expirationDate' } | Select-Object Value).Value
+            if ($VMHostLicense.LicenseKey -and $Options.ShowLicenseKeys) {
+                $VMHostLicenseKey = $VMHostLicense.LicenseKey
             } else {
-                "Expired"
+                $VMHostLicenseKey = "*****-*****-*****" + $VMHostLicense.LicenseKey.Substring(17)
+            }
+            $LicenseObject = [PSCustomObject]@{
+                Product = $VMHostLicense.Name
+                LicenseKey = $VMHostLicenseKey
+                Expiration =
+                if ($null -eq $VMHostLicenseExpiration) {
+                    "Never"
+                } elseif ($VMHostLicenseExpiration -gt (Get-Date)) {
+                    $VMHostLicenseExpiration.ToShortDateString()
+                } else {
+                    "Expired"
+                }
             }
         }
-    }        
-    Write-Output $LicenseObject
+    }
+    End {
+        Write-Output $LicenseObject
+    }
 }

@@ -91,7 +91,7 @@ function Invoke-AsBuiltReport.VMware.ESXi {
                             BlankLine
 
                             #region ESXi Host Specifications
-                            $VMHostUptime = Get-Uptime -VMHost $VMHost
+                            $VMHostUptime = Get-HostUptime -VMHost $VMHost
                             $esxcli = Get-EsxCli -VMHost $VMHost -V2
                             $VMHostLicense = Get-VMHostLicense -VMHost $VMHost
                             $ScratchLocation = Get-AdvancedSetting -Entity $VMHost | Where-Object { $_.Name -eq 'ScratchConfig.CurrentScratchLocation' }
@@ -1426,7 +1426,7 @@ function Invoke-AsBuiltReport.VMware.ESXi {
                         Section -Style Heading2 'Security' {
                             Paragraph "The following section details the host security configuration for $($VMHost.ExtensionData.Name)."
                             #region ESXi Host Lockdown Mode
-                            if ($VMHost.ExtensionData.Config.LockdownMode -ne $null) {
+                            if ($null -ne $VMHost.ExtensionData.Config.LockdownMode) {
                                 Section -Style Heading3 'Lockdown Mode' {
                                     $LockdownMode = [PSCustomObject]@{
                                         'Lockdown Mode' = Switch ($VMHost.ExtensionData.Config.LockdownMode) {
@@ -1670,7 +1670,7 @@ function Invoke-AsBuiltReport.VMware.ESXi {
                                     foreach ($VM in $VMs) {
                                         Section -Style Heading3 $VM.name {
                                             $VMUptime = @()
-                                            $VMUptime = Get-Uptime -VM $VM
+                                            $VMUptime = Get-HostUptime -VM $VM
                                             $VMSpbmPolicy = $VMSpbmConfig | Where-Object { $_.entity -eq $vm }
                                             $VMView = $VM | Get-View
                                             $VMSnapshotList = $vmview.Snapshot.RootSnapshotList
@@ -1727,17 +1727,17 @@ function Invoke-AsBuiltReport.VMware.ESXi {
                                                     '--'
                                                 }
                                                 'Networks' = if ($VMView.Guest.Net.Network) {
-                                                    (($VMView.Guest.Net | Where-Object { $_.Network -ne $null } | Select-Object Network | Sort-Object Network).Network -join ', ')
+                                                    (($VMView.Guest.Net | Where-Object { $null -ne $_.Network } | Select-Object Network | Sort-Object Network).Network -join ', ')
                                                 } else {
                                                     '--'
                                                 }
                                                 'IP Address' = if ($VMView.Guest.Net.IpAddress) {
-                                                    (($VMView.Guest.Net | Where-Object { ($_.Network -ne $null) -and ($_.IpAddress -ne $null) } | Select-Object IpAddress | Sort-Object IpAddress).IpAddress -join ', ')
+                                                    (($VMView.Guest.Net | Where-Object { ($null -ne $_.Network) -and ($null -ne $_.IpAddress) } | Select-Object IpAddress | Sort-Object IpAddress).IpAddress -join ', ')
                                                 } else {
                                                     '--'
                                                 }
                                                 'MAC Address' = if ($VMView.Guest.Net.MacAddress) {
-                                                    (($VMView.Guest.Net | Where-Object { $_.Network -ne $null } | Select-Object -Property MacAddress).MacAddress -join ', ')
+                                                    (($VMView.Guest.Net | Where-Object { $null -ne $_.Network } | Select-Object -Property MacAddress).MacAddress -join ', ')
                                                 } else {
                                                     '--'
                                                 }
@@ -1800,7 +1800,7 @@ function Invoke-AsBuiltReport.VMware.ESXi {
                                             $VMDetail | Table @TableParams
 
                                             if ($InfoLevel.VM -ge 4) {
-                                                $VMnics = $VM.Guest.Nics | Where-Object { $_.Device -ne $null } | Sort-Object Device
+                                                $VMnics = $VM.Guest.Nics | Where-Object { $null -ne $_.Device } | Sort-Object Device
                                                 $VMHdds = $VMHardDisks | Where-Object { $_.ParentId -eq $VM.Id } | Sort-Object Name
                                                 $SCSIControllers = $VMView.Config.Hardware.Device | Where-Object { $_.DeviceInfo.Label -match "SCSI Controller" }
                                                 $VMGuestVols = $VM.Guest.Disks | Sort-Object Path
